@@ -80,196 +80,294 @@ function createCard(item, isTV) {
     return card;
 }
 
-// ── CARREGAR FILMES EM CARTAZ NOS CINEMAS (Conectado ao TMDB) ──
+// ── CARREGAR FILMES EM CARTAZ NO CINEMA ──
 async function loadNowPlaying() {
-    const track = document.getElementById('trackNowPlaying');
-    const view  = document.getElementById('viewNowPlaying');
+    const track = document.getElementById('trackCinema');
+    const view  = document.getElementById('viewCinema');
+    if (!track || !view) return;
     try {
-        const data = await tmdb('/movie/now_playing?language=pt-BR&page=1&region=BR');
-        const movies = (data.results || []).filter(m => m.poster_path && m.title);
-        if (!movies.length) {
-            track.innerHTML = '<div class="loading-card">Nenhum filme em cartaz encontrado.</div>';
-            return;
-        }
+        // Busca 3 páginas para ter volume suficiente, ordena por data de lançamento crescente
+        const [p1, p2, p3] = await Promise.all([
+            fetch('/api/nowplaying?page=1').then(r => r.json()),
+            fetch('/api/nowplaying?page=2').then(r => r.json()),
+            fetch('/api/nowplaying?page=3').then(r => r.json()),
+        ]);
+        const seen = new Set();
+        const movies = [...(p1.results||[]), ...(p2.results||[]), ...(p3.results||[])]
+            .filter(m => {
+                if (!m.poster_path || !(m.title || m.name)) return false;
+                if (seen.has(m.id)) return false;
+                seen.add(m.id);
+                return true;
+            })
+            .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+
+        if (!movies.length) { track.innerHTML = '<div class="loading-card">Nenhum filme em cartaz encontrado.</div>'; return; }
         track.innerHTML = '';
         movies.forEach(m => track.appendChild(createCard(m, false)));
-        buildCarousel(track, view, document.getElementById('prevNowPlaying'), document.getElementById('nextNowPlaying'));
-    } catch (e) {
-        console.error(e);
+        buildCarousel(track, view, document.getElementById('prevCinema'), document.getElementById('nextCinema'));
+    } catch(e) {
+        console.error('NowPlaying:', e);
         track.innerHTML = '<div class="loading-card">Erro ao carregar filmes em cartaz.</div>';
     }
 }
 
-// ── CARREGAR FILMES (futuros + populares, sem séries antigas) ──
+
 async function loadMovies() {
     const track = document.getElementById('trackMovies');
     const view  = document.getElementById('viewMovies');
     try {
         const r = await fetch('/api/upcoming');
         if (!r.ok) throw new Error(r.status);
-        const data = await r.json();
+        const data   = await r.json();
         const movies = (data.results || []).filter(m => m.poster_path && (m.title || m.name));
-        if (!movies.length) {
-            track.innerHTML = '<div class="loading-card">Nenhum filme encontrado.</div>';
-            return;
-        }
+        if (!movies.length) { track.innerHTML = '<div class="loading-card">Nenhum filme encontrado.</div>'; return; }
         track.innerHTML = '';
         movies.forEach(m => track.appendChild(createCard(m, false)));
         buildCarousel(track, view, document.getElementById('prevMovies'), document.getElementById('nextMovies'));
-    } catch (e) {
-        console.error(e);
-        track.innerHTML = '<div class="loading-card">Erro ao carregar lançamentos.</div>';
+    } catch(e) {
+        track.innerHTML = '<div class="loading-card">Erro ao carregar filmes.</div>';
     }
 }
 
 // ── CARREGAR SÉRIES ──
+// Só séries com estreia futura (a partir de hoje) e populares
 async function loadSeries() {
     const track = document.getElementById('trackSeries');
     const view  = document.getElementById('viewSeries');
     try {
-        const data = await tmdb('/tv/on_the_air?language=pt-BR&page=1');
-        const series = (data.results || []).filter(s => s.poster_path && s.name);
-        if (!series.length) {
-            track.innerHTML = '<div class="loading-card">Nenhuma série encontrada.</div>';
-            return;
-        }
+        const today  = new Date().toISOString().split('T')[0];
+        const future = new Date(); future.setDate(future.getDate()+120);
+        const futStr = future.toISOString().split('T')[0];
+
+        // Busca 3 fontes em paralelo para ter volume suficiente
+        const [p1, p2, p3] = await Promise.all([
+            // Séries que estreiam nos próximos 120 dias, mais populares primeiro
+            tmdb(`discover/tv?language=pt-BR&sort_by=popularity.desc&first_air_date.gte=${today}&first_air_date.lte=${futStr}&page=1`),
+            tmdb(`discover/tv?language=pt-BR&sort_by=popularity.desc&first_air_date.gte=${today}&first_air_date.lte=${futStr}&page=2`),
+            // Séries no ar AGORA com primeiro episódio a partir de hoje (recentes)
+            tmdb(`discover/tv?language=pt-BR&sort_by=first_air_date.desc&first_air_date.gte=${today}&page=1`)
+        ]);
+
+        const seen = new Set();
+        const all  = [...(p1.results||[]), ...(p2.results||[]), ...(p3.results||[])]
+            .filter(s => {
+                if (!s.poster_path) return false;
+                // FILTRO IMPORTANTE: só aceita série com data de estreia >= hoje
+                const d = s.first_air_date || '';
+                if (!d || d < today) return false;
+                if (seen.has(s.id)) return false;
+                seen.add(s.id);
+                return true;
+            })
+            .sort((a,b) => (a.first_air_date||'').localeCompare(b.first_air_date||''))
+            .slice(0, 20);
+
+        if (!all.length) { track.innerHTML = '<div class="loading-card">Nenhuma série futura encontrada.</div>'; return; }
         track.innerHTML = '';
-        series.forEach(s => track.appendChild(createCard(s, true)));
+        all.forEach(s => track.appendChild(createCard(s, true)));
         buildCarousel(track, view, document.getElementById('prevSeries'), document.getElementById('nextSeries'));
-    } catch (e) {
-        console.error(e);
+    } catch(e) {
+        console.error('Series:', e);
         track.innerHTML = '<div class="loading-card">Erro ao carregar séries.</div>';
     }
 }
 
-// ── ALTERNAR ABAS ──
-function switchTab(tabId, btnEl) {
+// ── ABAS ──
+function switchTab(tab, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btnEl.classList.add('active');
-    document.getElementById('panel-' + tabId).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
 }
 
-// ── MODAL CAPTURA ──
-function openModal(planName) {
-    currentPlan = planName;
-    document.getElementById('modalTitle').innerText = planName === 'Geral' ? 'Solicitar Teste Grátis' : `Assinar Plano ${planName}`;
-    document.getElementById('modalCapture').style.display = 'flex';
+// ── MODAL FILME/SÉRIE ──
+async function openMediaModal(item, isTV) {
+    const modal    = document.getElementById('mediaModal');
+    const backdrop = document.getElementById('mediaBackdrop');
+    const poster   = document.getElementById('mediaPoster');
+    const title    = document.getElementById('mediaTitle');
+    const tags     = document.getElementById('mediaTags');
+    const meta     = document.getElementById('mediaMetaRow');
+    const overview = document.getElementById('mediaOverview');
+    const cast     = document.getElementById('mediaCast');
+    const ctaWrap  = document.getElementById('mediaCtaWrap');
+
+    tags.innerHTML=''; meta.innerHTML=''; cast.innerHTML=''; ctaWrap.innerHTML='';
+    title.textContent = item.title || item.name || '';
+
+    // Sinopse — usa o que veio no card; se vazio, busca detalhes completos
+    let sinopse = item.overview || '';
+
+    poster.src = item.poster_path ? 'https://image.tmdb.org/t/p/w342'+item.poster_path : '';
+    backdrop.style.backgroundImage = item.backdrop_path
+        ? `url('https://image.tmdb.org/t/p/w1280${item.backdrop_path}')`
+        : `url('https://images.unsplash.com/photo-1574375927938-d5a98e8edd86?q=80&w=1280')`;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Busca detalhes + créditos em paralelo (sinopse em pt-BR e elenco)
+    try {
+        const type = isTV ? 'tv' : 'movie';
+        const [details, credits] = await Promise.all([
+            tmdb(`${type}/${item.id}?language=pt-BR`),
+            tmdb(`${type}/${item.id}/credits?language=pt-BR`)
+        ]);
+
+        // Sinopse em português com fallback
+        sinopse = details.overview || sinopse || 'Sinopse ainda não disponível.';
+        overview.textContent = sinopse;
+
+        // Gêneros vindos dos detalhes completos
+        tags.innerHTML = '';
+        (details.genres || []).slice(0,3).forEach(g => {
+            const t = document.createElement('span');
+            t.className='media-tag'; t.textContent=g.name; tags.appendChild(t);
+        });
+
+        // Duração / temporadas
+        const extra = isTV
+            ? (details.number_of_seasons ? `${details.number_of_seasons} temp.` : '')
+            : (details.runtime ? `${details.runtime} min` : '');
+
+        const date  = item.release_date || item.first_air_date;
+        const dateF = date ? date.split('-').reverse().join('/') : 'Em breve';
+        meta.innerHTML = `
+            <div class="media-meta">📆 <strong>${dateF}</strong></div>
+            ${item.vote_average ? `<div class="media-meta">⭐ <strong>${item.vote_average.toFixed(1)}</strong></div>` : ''}
+            ${extra ? `<div class="media-meta">🎞 <strong>${extra}</strong></div>` : ''}
+            ${details.original_language ? `<div class="media-meta">🌐 <strong>${details.original_language.toUpperCase()}</strong></div>` : ''}`;
+
+        // Elenco
+        (credits.cast || []).slice(0,6).forEach(p => {
+            const chip = document.createElement('div');
+            chip.className='cast-chip'; chip.textContent=p.name; cast.appendChild(chip);
+        });
+
+    } catch(_) {
+        overview.textContent = sinopse || 'Sinopse ainda não disponível.';
+        // Gêneros do card (fallback)
+        const gmap = isTV ? GENRES_TV : GENRES_MOVIE;
+        (item.genre_ids||[]).slice(0,3).forEach(id => {
+            if(gmap[id]){ const t=document.createElement('span'); t.className='media-tag'; t.textContent=gmap[id]; tags.appendChild(t); }
+        });
+        const date  = item.release_date || item.first_air_date;
+        const dateF = date ? date.split('-').reverse().join('/') : 'Em breve';
+        meta.innerHTML = `<div class="media-meta">📆 <strong>${dateF}</strong></div>`;
+    }
+
+    // Botão CTA — "em breve" para futuros, "solicitar teste" para disponíveis
+    const releaseDate = item.release_date || item.first_air_date || '';
+    const today = new Date().toISOString().split('T')[0];
+    const isFuture = releaseDate && releaseDate > today;
+
+    if (isFuture) {
+        ctaWrap.innerHTML = `<div class="media-soon">🕐 Disponível na VLTV Play após o lançamento</div>`;
+    } else {
+        ctaWrap.innerHTML = `<button class="btn-cta media-cta" onclick="openModal('Geral'); closeMediaModal()">🎬 Quero Assistir — Teste Grátis</button>`;
+    }
+}
+
+function closeMediaModal() {
+    document.getElementById('mediaModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+function handleMediaModalClick(e) {
+    if (e.target === document.getElementById('mediaModal')) closeMediaModal();
+}
+
+// ── FAQ ──
+document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-question').addEventListener('click', () => {
+        const active = document.querySelector('.faq-item.active');
+        if (active && active !== item) active.classList.remove('active');
+        item.classList.toggle('active');
+    });
+});
+
+// ── MODAL DISPOSITIVO ──
+function openModal(ctx) {
+    currentPlan = ctx;
+    document.getElementById('modalTitle').innerText =
+        ctx === 'Geral' ? 'Solicitar Teste Grátis' : `Teste — ${ctx}`;
+    document.getElementById('testModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 function closeModal() {
-    document.getElementById('modalCapture').style.display = 'none';
+    document.getElementById('testModal').classList.remove('active');
+    document.body.style.overflow = '';
 }
-function handleCapture(e) {
-    e.preventDefault();
-    const name = document.getElementById('capName').value.trim();
-    const tel  = document.getElementById('capTel').value.trim();
-    const dev  = document.getElementById('capDevice').value;
-
-    let text = `Olá, gostaria de um teste!%0A*Nome:* ${name}%0A*WhatsApp:* ${tel}%0A*Aparelho:* ${dev}`;
-    if (currentPlan !== 'Geral') {
-        text = `Olá, gostaria de contratar um plano!%0A*Plano:* ${currentPlan}%0A*Nome:* ${name}%0A*WhatsApp:* ${tel}%0A*Aparelho:* ${dev}`;
-    }
-    window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP}&text=${text}`, '_blank');
+function handleModalClick(e) {
+    if (e.target === document.getElementById('testModal')) closeModal();
+}
+function sendWhatsApp() {
+    const device = document.getElementById('deviceSelect').value;
+    const text = currentPlan === 'Geral'
+        ? `Olá! Gostaria de solicitar um teste gratuito para: ${device}.`
+        : `Olá! Tenho interesse no ${currentPlan}. Gostaria de um teste para: ${device}.`;
+    window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP}&text=${encodeURIComponent(text)}`, '_blank');
     closeModal();
 }
 
-// ── MODAL DETALHES COMPLETO (TMDB VINCULADO) ──
-async function openMediaModal(item, isTV) {
-    document.getElementById('mTitle').innerText = item.title || item.name || '';
-    const date = item.release_date || item.first_air_date || '';
-    document.getElementById('mDate').innerText = date ? '📆 ' + date.split('-').reverse().join('/') : '📆 Em breve';
-    document.getElementById('mRating').innerText = item.vote_average ? '⭐ ' + item.vote_average.toFixed(1) : '⭐ 0.0';
-    document.getElementById('mOverview').innerText = item.overview || 'Sinopse não disponível em português.';
+// ── CHAT IA ──
+let chatOpen = false;
+const chatHistory = [];
 
-    const poster = item.poster_path
-        ? 'https://image.tmdb.org/t/p/w342' + item.poster_path
-        : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=342';
-    document.getElementById('mPoster').src = poster;
-
-    const gDiv = document.getElementById('mGenres'); gDiv.innerHTML = '';
-    const ids = item.genre_ids || [];
-    const dict = isTV ? GENRES_TV : GENRES_MOVIE;
-    ids.forEach(id => {
-        if (dict[id]) { gDiv.innerHTML += `<span>${dict[id]}</span>`; }
-    });
-
-    const castEl = document.getElementById('mCast');
-    castEl.innerText = 'Carregando elenco...';
-    document.getElementById('mediaModal').style.display = 'flex';
-
-    try {
-        const type = isTV ? 'tv' : 'movie';
-        const credits = await tmdb(`/${type}/${item.id}/credits?language=pt-BR`);
-        const names = (credits.cast || []).slice(0, 5).map(c => c.name);
-        castEl.innerText = names.length ? names.join(', ') : 'Informação não disponível';
-    } catch (e) {
-        castEl.innerText = 'Não foi possível carregar o elenco.';
-    }
-}
-function closeMediaModal() {
-    document.getElementById('mediaModal').style.display = 'none';
-}
-
-// ── FAQ TOGGLE ──
-function toggleFaq(el) {
-    el.classList.toggle('open');
-}
-
-// ── CHATBOT HISTÓRICO ──
-let chatHistory = [];
 function toggleChat() {
-    const box = document.getElementById('chatBox');
-    box.classList.toggle('open');
-    if (box.classList.contains('open')) {
-        document.getElementById('chatBadge').style.display = 'none';
+    chatOpen = !chatOpen;
+    const box  = document.getElementById('chatBox');
+    const icon = document.querySelector('.chat-icon');
+    const cls  = document.querySelector('.close-icon');
+    const bdg  = document.getElementById('chatBadge');
+    if (chatOpen) {
+        box.style.display = 'flex';
+        requestAnimationFrame(() => box.classList.add('open'));
+        if(icon) icon.style.display='none';
+        if(cls)  cls.style.display='block';
+        if(bdg)  bdg.style.display='none';
+        scrollChat();
+    } else {
+        box.classList.remove('open');
+        if(icon) icon.style.display='block';
+        if(cls)  cls.style.display='none';
+        setTimeout(() => { box.style.display='none'; }, 260);
     }
 }
-function ftime() {
-    const d = new Date();
-    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-}
-function scrollChat() {
-    const m = document.getElementById('chatMessages');
-    m.scrollTop = m.scrollHeight;
-}
+function handleChatKey(e) { if(e.key==='Enter') sendChatMessage(); }
+function scrollChat() { const m=document.getElementById('chatMessages'); if(m) m.scrollTop=m.scrollHeight; }
+function ftime() { const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
 function addMsg(html, sender) {
-    const msgs = document.getElementById('chatMessages');
-    const d = document.createElement('div'); d.className = `chat-msg ${sender}`;
-    d.innerHTML = `<div class="chat-bubble">${html}</div><div class="chat-time">${ftime()}</div>`;
+    const msgs=document.getElementById('chatMessages');
+    const d=document.createElement('div'); d.className=`chat-msg ${sender}`;
+    d.innerHTML=`<div class="chat-bubble">${html}</div><div class="chat-time">${ftime()}</div>`;
     msgs.appendChild(d); scrollChat();
 }
 function addTyping() {
-    const msgs = document.getElementById('chatMessages');
-    const d = document.createElement('div'); d.className = 'chat-msg bot typing-indicator'; d.id = 'typingDot';
-    d.innerHTML = '<div class="chat-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+    const msgs=document.getElementById('chatMessages');
+    const d=document.createElement('div'); d.className='chat-msg bot typing-indicator'; d.id='typingDot';
+    d.innerHTML='<div class="chat-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
     msgs.appendChild(d); scrollChat();
 }
-function removeTyping() {
-    const t = document.getElementById('typingDot'); if(t) t.remove();
-}
+function removeTyping() { const t=document.getElementById('typingDot'); if(t) t.remove(); }
 async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const txt = input.value.trim(); if(!txt) return;
-    input.value = ''; addMsg(txt,'user');
+    const input=document.getElementById('chatInput');
+    const txt=input.value.trim(); if(!txt) return;
+    input.value=''; addMsg(txt,'user');
     chatHistory.push({role:'user',parts:[{text:txt}]});
     addTyping();
     try {
-        const r = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({history:chatHistory})});
-        const data = await r.json(); removeTyping();
-        const reply = data.reply || 'Não consegui processar sua mensagem. Por favor, chame nosso suporte no WhatsApp!';
+        const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:chatHistory})});
+        const data=await r.json(); removeTyping();
+        const reply=data.reply||'Não consegui processar. Fale no WhatsApp! 😊';
         chatHistory.push({role:'model',parts:[{text:reply}]});
-        addMsg(reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'), 'bot');
-    } catch(e) {
-        removeTyping(); addMsg('Erro ao conectar com o servidor. Tente novamente.', 'bot');
-    }
-}
-function handleChatKey(e) {
-    if(e.key === 'Enter') sendChatMessage();
+        addMsg(reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'),'bot');
+    } catch(e) { removeTyping(); addMsg('Erro de conexão. Fale no WhatsApp! 💬','bot'); }
 }
 
-// ── ONLOAD ──
-window.onload = () => {
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
     loadNowPlaying();
     loadMovies();
     loadSeries();
-};
+});
