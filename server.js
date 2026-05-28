@@ -1,5 +1,5 @@
 // =============================================
-// VLTV Play — server.js (CORRIGIDO)
+// VLTV Play — server.js FINAL
 // =============================================
 
 const http  = require('http');
@@ -8,9 +8,9 @@ const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'SUA_CHAVE_AQUI';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const TMDB_API_KEY   = process.env.TMDB_API_KEY   || '9b73f5dd15b8165b1b57419be2f29128';
-const FOOTBALL_KEY   = process.env.FOOTBALL_KEY   || ''; // API-Football key (api-football.com)
+const FOOTBALL_KEY   = process.env.FOOTBALL_KEY   || '';
 const PORT           = process.env.PORT || 3000;
 const STATIC_DIR     = path.join(__dirname, 'public');
 
@@ -30,6 +30,9 @@ const SYSTEM_INSTRUCTION = `Você é o assistente virtual oficial da VLTV Play, 
 Responda SEMPRE em português do Brasil, com tom simpático, objetivo e profissional.
 Nunca se identifique como IA genérica ou mencione o Google ou Gemini — você é o Assistente VLTV.
 
+== SAUDAÇÕES ==
+Se o usuário disser "bom dia", "boa tarde", "boa noite", "olá", "oi", "tudo bem" ou qualquer saudação, responda de forma amigável e pergunte como pode ajudar com o VLTV Play.
+
 == PLANOS E PREÇOS ==
 - Plano Mensal:     R$ 40/mês    | 1 dispositivo simultâneo | HD, Full HD e 4K
 - Plano Trimestral: R$ 110/3 meses | todos os benefícios | grade completa de canais
@@ -38,47 +41,42 @@ Nunca se identifique como IA genérica ou mencione o Google ou Gemini — você 
 - Plano Vitalício:  R$ 569 (pagamento único) | sem mensalidades | suporte VIP permanente
 
 == TESTE GRATUITO ==
-- Duração do teste: 3 horas de acesso completo.
-- Para solicitar, basta clicar em "Solicitar Teste Grátis" no site ou falar pelo WhatsApp.
-- O teste é liberado imediatamente pela equipe.
+- Duração: 3 horas de acesso completo.
+- Solicitar: clicar em "Solicitar Teste Grátis" no site ou falar pelo WhatsApp.
+- Liberado imediatamente pela equipe.
 
 == FIDELIDADE E CANCELAMENTO ==
 - NÃO há fidelidade em nenhum plano.
-- O cliente pode cancelar quando quiser, sem multa ou burocracia.
+- Cancele quando quiser, sem multa ou burocracia.
 
 == INTERNET ==
-- Sim, é necessário ter conexão com a internet para usar o IPTV.
+- Necessário ter conexão com a internet.
 - Recomendamos pelo menos 10 Mbps para HD e 25 Mbps para 4K.
 
 == DISPOSITIVOS COMPATÍVEIS ==
-- Sim, pode instalar no Celular (Android e iOS).
-- Sim, pode instalar em TV Smart.
-- Sim, pode instalar em Notebook / Computador.
-- Sim, pode instalar em Fire Stick / TV Box.
-- Sim, pode instalar em Roku TV.
-- Você pode instalar em quantos aparelhos desejar; o acesso simultâneo depende da quantidade de telas do plano.
+- Celular (Android e iOS), TV Smart, Notebook, Computador, Fire Stick, TV Box, Roku TV.
+- Instale em quantos aparelhos quiser; acesso simultâneo depende do plano.
 
 == FORMAS DE PAGAMENTO ==
-- PIX: ativação IMEDIATA e automática após confirmação (em minutos).
-- Cartão de Crédito: ativação em até 1 hora após confirmação.
-- Boleto Bancário: ativação após compensação bancária (até 2 dias úteis) OU imediata se o cliente enviar o comprovante pelo WhatsApp.
+- PIX: ativação IMEDIATA em minutos.
+- Cartão de Crédito: ativação em até 1 hora.
+- Boleto Bancário: até 2 dias úteis, ou imediata enviando comprovante pelo WhatsApp.
 
 == ATIVAÇÃO ==
-As credenciais são enviadas pelo WhatsApp com tutorial passo a passo para o aparelho do cliente.
+Credenciais enviadas pelo WhatsApp com tutorial passo a passo.
 
 == SUPORTE ==
 WhatsApp direto com a equipe. Suporte prioritário nos planos Semestral e Anual. VIP no Vitalício.
 
-== SAUDAÇÕES ==
-Se o usuário disser "bom dia", "boa tarde", "boa noite", "olá", "oi", "tudo bem" ou qualquer saudação, responda de forma amigável e pergunte como pode ajudar com o VLTV Play.
+== COPA DO MUNDO 2026 ==
+Todos os jogos disponíveis ao vivo no VLTV Play em HD e 4K, incluindo todos os jogos do Brasil.
 
 == REGRAS ==
 - Responda saudações normalmente como um atendente faria.
-- Se não souber algo com certeza, oriente o cliente a entrar em contato pelo WhatsApp.
-- Respostas curtas e diretas — máximo 3 parágrafos ou lista simples.
-- Nunca invente informações sobre preços ou funcionalidades que não estejam listadas acima.`;
+- Se não souber algo, oriente pelo WhatsApp.
+- Respostas curtas e diretas — máximo 3 parágrafos.
+- Nunca invente preços ou funcionalidades.`;
 
-// ── Helpers ──
 function sendJSON(res, status, obj) {
     res.writeHead(status, {
         'Content-Type': 'application/json',
@@ -99,21 +97,19 @@ function serveStatic(res, filePath) {
     });
 }
 
-// ── Proxy TMDB ──
 function callTMDB(tmdbPath) {
     return new Promise((resolve, reject) => {
-        const options = {
+        const req = https.request({
             hostname: 'api.themoviedb.org',
-            path:     tmdbPath,
-            method:   'GET',
-            headers:  { 'Accept': 'application/json' },
-        };
-        const req = https.request(options, (apiRes) => {
+            path: tmdbPath,
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+        }, (apiRes) => {
             let raw = '';
             apiRes.on('data', chunk => raw += chunk);
             apiRes.on('end', () => {
                 try { resolve(JSON.parse(raw)); }
-                catch (e) { reject(new Error('Resposta inválida do TMDB')); }
+                catch (e) { reject(new Error('TMDB inválido')); }
             });
         });
         req.on('error', reject);
@@ -121,27 +117,20 @@ function callTMDB(tmdbPath) {
     });
 }
 
-// ── Proxy API-Football ──
 function callFootball(endpoint) {
     return new Promise((resolve, reject) => {
-        if (!FOOTBALL_KEY) {
-            return resolve({ response: [] });
-        }
-        const options = {
+        if (!FOOTBALL_KEY) return resolve({ response: [] });
+        const req = https.request({
             hostname: 'v3.football.api-sports.io',
-            path:     '/' + endpoint,
-            method:   'GET',
-            headers:  {
-                'x-apisports-key': FOOTBALL_KEY,
-                'Accept': 'application/json',
-            },
-        };
-        const req = https.request(options, (apiRes) => {
+            path: '/' + endpoint,
+            method: 'GET',
+            headers: { 'x-apisports-key': FOOTBALL_KEY, 'Accept': 'application/json' },
+        }, (apiRes) => {
             let raw = '';
             apiRes.on('data', chunk => raw += chunk);
             apiRes.on('end', () => {
                 try { resolve(JSON.parse(raw)); }
-                catch (e) { reject(new Error('Resposta inválida da API Football')); }
+                catch (e) { reject(new Error('Football inválido')); }
             });
         });
         req.on('error', reject);
@@ -149,106 +138,93 @@ function callFootball(endpoint) {
     });
 }
 
-// ── Chamada à API Gemini ──
+// ── Gemini usando v1 (estável) com gemini-2.0-flash ──
 function callGemini(history) {
     return new Promise((resolve, reject) => {
         const body = JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
             contents: history,
-            generationConfig: {
-                temperature:     0.7,
-                maxOutputTokens: 1500,
-            }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 800 },
         });
 
-        const options = {
+        const req = https.request({
             hostname: 'generativelanguage.googleapis.com',
-            path:     `/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-            method:   'POST',
+            path: `/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+            method: 'POST',
             headers: {
-                'Content-Type':   'application/json',
+                'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(body),
             },
-        };
-
-        const req = https.request(options, (apiRes) => {
+        }, (apiRes) => {
             let raw = '';
             apiRes.on('data', chunk => raw += chunk);
             apiRes.on('end', () => {
+                console.log('[Gemini] HTTP Status:', apiRes.statusCode);
                 try {
                     const parsed = JSON.parse(raw);
-                    resolve(parsed);
+                    if (parsed.error) {
+                        console.error('[Gemini] Erro da API:', JSON.stringify(parsed.error));
+                    }
+                    resolve({ data: parsed, status: apiRes.statusCode });
                 } catch (e) {
-                    reject(new Error('Resposta inválida da API Gemini'));
+                    console.error('[Gemini] Resposta não é JSON:', raw.slice(0, 300));
+                    reject(new Error('Gemini resposta inválida'));
                 }
             });
         });
 
-        req.on('error', reject);
+        req.on('error', (e) => {
+            console.error('[Gemini] Erro de conexão:', e.message);
+            reject(e);
+        });
         req.write(body);
         req.end();
     });
 }
 
-// ── Filmes em cartaz: apenas com lançamento nos últimos 60 dias + data <= hoje ──
-async function fetchNowPlayingFiltered(page = 1) {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const past60 = new Date(today);
+async function fetchNowPlayingFiltered(page) {
+    page = page || 1;
+    const today = new Date().toISOString().split('T')[0];
+    const past60 = new Date();
     past60.setDate(past60.getDate() - 60);
     const past60Str = past60.toISOString().split('T')[0];
-
-    // Usa discover com intervalo de datas real para garantir filmes em cartaz
-    const data = await callTMDB(
+    return callTMDB(
         `/3/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR` +
         `&sort_by=release_date.desc` +
         `&primary_release_date.gte=${past60Str}` +
-        `&primary_release_date.lte=${todayStr}` +
+        `&primary_release_date.lte=${today}` +
         `&page=${page}`
     );
-    return data;
 }
 
-// ── Lançamentos futuros ──
 async function fetchUpcomingFiltered() {
     const today = new Date().toISOString().split('T')[0];
-    let allResults = [];
-
+    let all = [];
     for (let page = 1; page <= 3; page++) {
         const data = await callTMDB(
             `/3/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR` +
-            `&sort_by=release_date.asc` +
-            `&primary_release_date.gte=${today}` +
-            `&page=${page}`
+            `&sort_by=release_date.asc&primary_release_date.gte=${today}&page=${page}`
         );
-        if (data.results && data.results.length > 0) {
-            allResults = allResults.concat(data.results);
-        }
+        if (data.results && data.results.length) all = all.concat(data.results);
     }
-
     const seen = new Set();
-    const filtered = allResults
+    return all
         .filter(m => {
-            if (!m.release_date || m.release_date < today) return false;
-            if (seen.has(m.id)) return false;
+            if (!m.release_date || m.release_date < today || seen.has(m.id)) return false;
             seen.add(m.id);
             return true;
         })
         .sort((a, b) => a.release_date.localeCompare(b.release_date))
         .slice(0, 20);
-
-    return filtered;
 }
 
-// ── Servidor ──
 const server = http.createServer(async (req, res) => {
-    const parsed  = url.parse(req.url, true);
+    const parsed = url.parse(req.url, true);
     const reqPath = parsed.pathname;
 
-    // CORS preflight
     if (req.method === 'OPTIONS') {
         res.writeHead(204, {
-            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
         });
@@ -256,113 +232,98 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── /api/nowplaying — filmes em cartaz (últimos 60 dias, ordenados por data desc) ──
     if (reqPath === '/api/nowplaying' && req.method === 'GET') {
         try {
             const page = parseInt(parsed.query.page || '1', 10);
-            const data = await fetchNowPlayingFiltered(page);
-            sendJSON(res, 200, data);
+            sendJSON(res, 200, await fetchNowPlayingFiltered(page));
         } catch (err) {
-            console.error('[/api/nowplaying] Erro:', err.message);
-            sendJSON(res, 500, { error: 'Erro ao buscar filmes em cartaz' });
+            console.error('[nowplaying]', err.message);
+            sendJSON(res, 500, { error: 'Erro nowplaying' });
         }
         return;
     }
 
-    // ── /api/upcoming ──
     if (reqPath === '/api/upcoming' && req.method === 'GET') {
         try {
-            const movies = await fetchUpcomingFiltered();
-            sendJSON(res, 200, { results: movies });
+            sendJSON(res, 200, { results: await fetchUpcomingFiltered() });
         } catch (err) {
-            console.error('[/api/upcoming] Erro:', err.message);
-            sendJSON(res, 500, { error: 'Erro ao buscar filmes' });
+            console.error('[upcoming]', err.message);
+            sendJSON(res, 500, { error: 'Erro upcoming' });
         }
         return;
     }
 
-    // ── /api/tmdb — proxy genérico ──
     if (reqPath === '/api/tmdb' && req.method === 'GET') {
         const endpoint = parsed.query.endpoint || '';
         if (!endpoint) return sendJSON(res, 400, { error: 'endpoint obrigatório' });
-        const sep      = endpoint.includes('?') ? '&' : '?';
-        const fullPath = `/3/${endpoint}${sep}api_key=${TMDB_API_KEY}`;
+        const sep = endpoint.includes('?') ? '&' : '?';
         try {
-            const data = await callTMDB(fullPath);
-            sendJSON(res, 200, data);
+            sendJSON(res, 200, await callTMDB(`/3/${endpoint}${sep}api_key=${TMDB_API_KEY}`));
         } catch (err) {
-            console.error('[/api/tmdb] Erro:', err.message);
-            sendJSON(res, 500, { error: 'Erro ao buscar dados do TMDB' });
+            console.error('[tmdb]', err.message);
+            sendJSON(res, 500, { error: 'Erro TMDB' });
         }
         return;
     }
 
-    // ── /api/football — Copa do Mundo e futebol ao vivo ──
     if (reqPath === '/api/football' && req.method === 'GET') {
         const endpoint = parsed.query.endpoint || '';
         if (!endpoint) return sendJSON(res, 400, { error: 'endpoint obrigatório' });
         try {
-            const data = await callFootball(endpoint);
-            sendJSON(res, 200, data);
+            sendJSON(res, 200, await callFootball(endpoint));
         } catch (err) {
-            console.error('[/api/football] Erro:', err.message);
-            sendJSON(res, 500, { error: 'Erro ao buscar dados de futebol' });
+            console.error('[football]', err.message);
+            sendJSON(res, 500, { error: 'Erro Football' });
         }
         return;
     }
 
-    // ── /api/chat (Gemini) ──
     if (reqPath === '/api/chat' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', async () => {
             try {
                 const { history } = JSON.parse(body);
-                if (!Array.isArray(history) || history.length === 0) {
+                if (!Array.isArray(history) || !history.length) {
                     return sendJSON(res, 400, { error: 'history inválido' });
                 }
 
-                // Verificação da chave antes de chamar
-                if (GEMINI_API_KEY === 'SUA_CHAVE_AQUI' || !GEMINI_API_KEY) {
-                    return sendJSON(res, 200, {
-                        reply: 'Olá! No momento estou em manutenção. Entre em contato pelo nosso WhatsApp para atendimento rápido! 💬'
-                    });
+                if (!GEMINI_API_KEY) {
+                    console.error('[chat] GEMINI_API_KEY não configurada!');
+                    return sendJSON(res, 200, { reply: 'Assistente em manutenção. Fale pelo WhatsApp! 💬' });
                 }
 
-                const geminiData = await callGemini(history);
+                console.log('[chat] Chamando Gemini com', history.length, 'mensagem(ns)...');
+                const result = await callGemini(history);
 
-                // Log para debug em caso de erro da API
-                if (geminiData.error) {
-                    console.error('[Gemini API Error]', JSON.stringify(geminiData.error));
-                    return sendJSON(res, 200, {
-                        reply: 'Olá! No momento não consigo processar sua pergunta. Fale conosco pelo WhatsApp! 💬'
-                    });
+                if (result.data.error) {
+                    console.error('[chat] Gemini retornou erro:', JSON.stringify(result.data.error));
+                    return sendJSON(res, 200, { reply: 'Não consigo responder agora. Fale pelo WhatsApp! 💬' });
                 }
 
                 const reply =
-                    geminiData?.candidates?.[0]?.content?.parts?.[0]?.text
-                    || 'Não consegui processar sua pergunta agora. Entre em contato pelo nosso WhatsApp para atendimento rápido! 💬';
+                    result.data?.candidates?.[0]?.content?.parts?.[0]?.text
+                    || 'Não entendi sua pergunta. Pode repetir?';
+
+                console.log('[chat] Resposta OK ✓');
                 sendJSON(res, 200, { reply });
+
             } catch (err) {
-                console.error('[/api/chat] Erro:', err.message);
-                sendJSON(res, 500, { error: 'Erro interno no servidor' });
+                console.error('[chat] Exceção:', err.message);
+                sendJSON(res, 500, { error: 'Erro interno' });
             }
         });
         return;
     }
 
-    // ── Arquivos estáticos ──
     let filePath = path.join(STATIC_DIR, reqPath === '/' ? 'index.html' : reqPath);
-    if (!filePath.startsWith(STATIC_DIR)) {
-        res.writeHead(403); res.end('Proibido'); return;
-    }
+    if (!filePath.startsWith(STATIC_DIR)) { res.writeHead(403); res.end('Proibido'); return; }
     serveStatic(res, filePath);
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅  VLTV Play rodando em http://0.0.0.0:${PORT}`);
-    console.log(`🔑  Gemini: ${GEMINI_API_KEY === 'SUA_CHAVE_AQUI' ? '⚠️  NÃO CONFIGURADA — configure a variável GEMINI_API_KEY' : 'OK ✓'}`);
-    console.log(`⚽  Football API: ${FOOTBALL_KEY ? 'OK ✓' : '⚠️  NÃO CONFIGURADA (seção Copa opcional)'}`);
+    console.log(`✅  VLTV Play em http://0.0.0.0:${PORT}`);
+    console.log(`🔑  Gemini: ${GEMINI_API_KEY ? 'Chave OK ✓ — modelo: gemini-2.0-flash (v1)' : '❌ GEMINI_API_KEY não configurada!'}`);
+    console.log(`⚽  Football: ${FOOTBALL_KEY ? 'OK ✓' : '⚠️  Não configurada'}`);
     console.log(`🎬  TMDB: OK ✓`);
-    console.log(`\n📌  Para acessar de outros dispositivos na mesma rede, use o IP da sua máquina:${PORT}`);
 });
