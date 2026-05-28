@@ -365,68 +365,30 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // =============================================
-    // Rota /api/gerarteste — AutoResponder WhatsApp
-    // =============================================
+    // Rota /api/gerarteste — Busca os dados completos do seu painel Sigma
     if (reqPath === '/api/gerarteste' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
-            try {
-                // O AutoResponder envia os dados encapsulados em formato JSON
-                const parsedBody = JSON.parse(body);
+        try {
+            // Este é o link completo que o seu painel gera para cada teste
+            const urlSigma = 'http://svn2.shop/get.php?username=TESTE_AUTO&password=TESTE_AUTO&type=m3u_plus&output=mpegts';
 
-                // Extrai o número do cliente (remetente) e a mensagem enviada
-                const clienteQuery = parsedBody.query || '';
-                const clienteMsg   = clienteQuery.message || '';
-                const clienteNum   = clienteQuery.sender  || '';
+            const respostaSigma = await new Promise((resolve) => {
+                http.get(urlSigma, (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => data += chunk);
+                    res.on('end', () => resolve(data));
+                }).on('error', () => resolve('Erro ao contatar o servidor Sigma.'));
+            });
 
-                console.log(`[AutoResponder] Solicitação recebida do número: ${clienteNum}`);
-
-                // 1. Gera as credenciais aleatórias para a linha de teste
-                const aleatorio     = Math.floor(100000 + Math.random() * 900000);
-                const usernameTeste = `vltv${aleatorio}`;
-                const passwordTeste = `${aleatorio}`;
-
-                // 2. Injeta o teste no painel Sigma
-                const sigmaResult = await callSigma(usernameTeste, passwordTeste);
-
-                if (sigmaResult.status !== 200 && sigmaResult.status !== 201) {
-                    console.error('[AutoResponder] Falha ao criar teste no painel Sigma:', sigmaResult.data);
-                    return sendJSON(res, 200, {
-                        replies: [{
-                            text: 'Olá! No momento nosso sistema automático está passando por uma manutenção rápida. Por favor, aguarde alguns instantes que um atendente humano irá liberar o seu teste manualmente! 💬'
-                        }]
-                    });
-                }
-
-                // 3. Monta o texto de resposta que o AutoResponder envia ao WhatsApp do cliente
-                const textoResposta =
-                    `*Seu Teste Grátis de 3 horas está Liberado!* 🎬🍿\n\n` +
-                    `Aqui estão suas credenciais de acesso:\n` +
-                    `👤 *Usuário:* ${usernameTeste}\n` +
-                    `🔑 *Senha:* ${passwordTeste}\n` +
-                    `🌐 *URL do Servidor:* http://vltvplay.xyz:8080\n\n` +
-                    `*Como assistir:*\n` +
-                    `1️⃣ Baixe o aplicativo *VLTV Play* na loja do seu aparelho.\n` +
-                    `2️⃣ Insira o usuário e senha acima.\n\n` +
-                    `Aproveite a nossa grade completa! Se precisar de ajuda com o tutorial de instalação, basta digitar *Suporte*.`;
-
-                // Retorna no formato exato que o AutoResponder exige
-                sendJSON(res, 200, {
-                    replies: [{ text: textoResposta }]
-                });
-
-            } catch (err) {
-                console.error('[AutoResponder Error]', err.message);
-                // Resposta de segurança para o webhook não quebrar a automação
-                sendJSON(res, 200, {
-                    replies: [{
-                        text: 'Ops! Ocorreu um erro ao processar seu teste automaticamente. Um de nossos atendentes já foi notificado e vai te enviar o acesso em instantes!'
-                    }]
-                });
-            }
-        });
+            // Envia o texto completo recebido do painel para o WhatsApp do cliente
+            sendJSON(res, 200, {
+                replies: [{ text: respostaSigma }]
+            });
+        } catch (err) {
+            console.error('[AutoResponder Error]', err.message);
+            sendJSON(res, 200, {
+                replies: [{ text: 'Ops! Ocorreu um erro ao gerar seu teste. Fale com nosso suporte!' }]
+            });
+        }
         return;
     }
 
