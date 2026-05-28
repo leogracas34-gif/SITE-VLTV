@@ -2011,8 +2011,257 @@ footer p {
     .copa-title-wrap h2 { font-size: 1.2rem; }
 }
 
-@media (max-width: 380px) {
+
+/* ── MODAL SELEÇÃO COPA ── */
+.selecao-modal-header {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.selecao-modal-flag {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.selecao-modal-nome {
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.selecao-modal-grupo {
+    font-size: 0.82rem;
+    color: #5a9a5a;
+    font-weight: 600;
+}
+
+.selecao-modal-info {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+.selecao-info-item {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.selecao-jogos-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--grey);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.selecao-jogos {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.selecao-jogo {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 14px;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+.selecao-jogo-num {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--red);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 48px;
+}
+
+.selecao-jogo-data {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--white);
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+}
+
+.selecao-jogo-status {
+    font-size: 0.72rem;
+    color: #5a9a5a;
+    font-weight: 600;
+}
+
+.selecao-aviso {
+    font-size: 0.85rem;
+    color: var(--grey);
+    line-height: 1.6;
+    text-align: center;
+    padding: 0 8px;
+}
+
+.selecao-aviso strong {
+    color: var(--white);
+}
+
     .selecoes-grid { -ms-grid-columns: (1fr)[3]; grid-template-columns: repeat(3, 1fr); }
     .hero-content h1 { font-size: 1.7rem; }
     .carr-btn { display: none; }
 }
+
+/* ── TEAM LOGOS ── */
+.team-logo    { width:24px; height:24px; object-fit:contain; border-radius:3px; }
+.team-logo-lg { width:40px; height:40px; object-fit:contain; }
+
+/* ── MATCH SCORE ── */
+.match-score {
+    font-size:1.2rem; font-weight:900; color:#fff;
+    padding:0 12px; letter-spacing:1px;
+}
+
+/* ── MODAL SELEÇÃO ── */
+.selecao-loading {
+    text-align:center; padding:40px 20px; color:#aaa;
+}
+.selecao-loading-flag { font-size:3rem; margin-bottom:12px; }
+.selecao-loading p    { font-size:0.9rem; }
+
+.selecao-modal-header {
+    display:flex; align-items:center; gap:16px; margin-bottom:20px;
+}
+.selecao-modal-flag  { font-size:3rem; line-height:1; }
+.selecao-modal-nome  { font-size:1.4rem; font-weight:900; margin-bottom:4px; }
+.selecao-modal-grupo { font-size:0.82rem; color:#5a9a5a; font-weight:600; }
+
+.selecao-stats-row {
+    display:flex; gap:8px; flex-wrap:wrap;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px; padding:14px 16px;
+    margin-bottom:20px; justify-content:space-around;
+}
+.selecao-stat-item {
+    display:flex; flex-direction:column;
+    align-items:center; gap:4px;
+}
+.s-val   { font-size:1.4rem; font-weight:900; }
+.s-label { font-size:0.62rem; color:#888; text-transform:uppercase; letter-spacing:0.8px; }
+.green-val  { color:#4ade80; }
+.yellow-val { color:#fbbf24; }
+.red-val    { color:#f87171; }
+
+.selecao-live-jogo {
+    background:rgba(229,9,20,0.08);
+    border:1px solid rgba(229,9,20,0.35);
+    border-radius:10px; padding:16px 18px;
+    margin-bottom:20px;
+}
+.selecao-live-label {
+    display:flex; align-items:center; gap:6px;
+    font-size:0.72rem; font-weight:800;
+    color:#ff4444; text-transform:uppercase;
+    letter-spacing:1px; margin-bottom:12px;
+}
+.selecao-live-placar {
+    display:flex; align-items:center;
+    justify-content:space-between; gap:8px;
+}
+.selecao-live-time {
+    display:flex; flex-direction:column;
+    align-items:center; gap:5px;
+    font-size:0.85rem; font-weight:700;
+    text-align:center; flex:1;
+}
+.selecao-live-score {
+    font-size:2rem; font-weight:900;
+    color:#fff; padding:0 16px;
+    letter-spacing:2px;
+}
+
+.selecao-jogos-title {
+    font-size:0.78rem; font-weight:700;
+    color:#888; text-transform:uppercase;
+    letter-spacing:1px; margin-bottom:10px;
+    margin-top:4px;
+}
+.selecao-jogos {
+    display:flex; flex-direction:column;
+    gap:8px; margin-bottom:18px;
+}
+.selecao-jogo {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:8px; padding:12px 14px;
+    display:flex; flex-direction:column; gap:8px;
+    transition:border-color 0.2s;
+}
+.selecao-jogo:hover { border-color:rgba(255,255,255,0.15); }
+.selecao-jogo-info  { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.selecao-jogo-fase  { font-size:0.65rem; font-weight:800; color:var(--red); text-transform:uppercase; letter-spacing:0.6px; }
+.selecao-jogo-data  { font-size:0.75rem; color:#aaa; }
+.selecao-jogo-adversario { display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; }
+
+.selecao-modal-info {
+    display:flex; flex-direction:column; gap:8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+    border-radius:8px; padding:14px 16px;
+    margin-bottom:20px;
+}
+.selecao-info-item {
+    display:flex; align-items:center;
+    gap:10px; font-size:0.85rem; color:#ccc;
+}
+
+.selecao-sem-dados {
+    text-align:center; padding:20px;
+    color:#666; font-size:0.85rem;
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--border);
+    border-radius:8px; margin-bottom:16px;
+}
+
+.selecao-aviso {
+    font-size:0.85rem; color:#888;
+    line-height:1.6; text-align:center;
+    padding:0 4px; margin-bottom:4px;
+}
+.selecao-aviso strong { color:#fff; }
