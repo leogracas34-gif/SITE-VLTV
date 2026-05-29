@@ -197,47 +197,6 @@ function callGemini(history) {
     });
 }
 
-// =============================================
-// callSigma — Cria linha de teste no painel Sigma
-// =============================================
-function callSigma(username, password) {
-    return new Promise((resolve, reject) => {
-        // Objeto com as credenciais que o painel Sigma exige para gerar o teste
-        const bodyObj = {
-            username: username,
-            password: password
-        };
-        const body = JSON.stringify(bodyObj);
-
-        const req = https.request({
-            hostname: 'painel.sigmatv.com', // Substitua pelo domínio correto do seu painel Sigma se for diferente
-            path: '/api/v1/test/generate',   // Substitua pelo endpoint exato fornecido pelo seu painel Sigma
-            method: 'POST',
-            headers: {
-                'Content-Type':   'application/json',
-                'Content-Length': Buffer.byteLength(body),
-                // Se o seu painel exigir algum Token de Revendedor ou API Key no Header, adicione abaixo:
-                // 'Authorization': 'Bearer SEU_TOKEN_AQUI'
-            },
-        }, (apiRes) => {
-            let raw = '';
-            apiRes.on('data', chunk => raw += chunk);
-            apiRes.on('end', () => {
-                try {
-                    resolve({ data: JSON.parse(raw), status: apiRes.statusCode });
-                } catch (e) {
-                    reject(new Error('Sigma: resposta JSON inválida'));
-                }
-            });
-        });
-
-        req.on('error', e => reject(e));
-        req.setTimeout(10000, () => { req.destroy(); reject(new Error('Sigma: timeout')); });
-        req.write(body);
-        req.end();
-    });
-}
-
 async function fetchNowPlayingFiltered(page) {
     page = page || 1;
     const today    = new Date().toISOString().split('T')[0];
@@ -362,33 +321,6 @@ const server = http.createServer(async (req, res) => {
                 sendJSON(res, 500, { error: 'Erro interno' });
             }
         });
-        return;
-    }
-
-        // Rota /api/gerarteste — Ajustada para aceitar POST ou GET
-    if (reqPath === '/api/gerarteste') {
-        try {
-            // Este é o link completo que o seu painel gera para cada teste
-            const urlSigma = 'http://svn2.shop/get.php?username=TESTE_AUTO&password=TESTE_AUTO&type=m3u_plus&output=mpegts';
-
-            const respostaSigma = await new Promise((resolve) => {
-                http.get(urlSigma, (res) => {
-                    let data = '';
-                    res.on('data', (chunk) => data += chunk);
-                    res.on('end', () => resolve(data));
-                }).on('error', () => resolve('Erro ao contatar o servidor Sigma.'));
-            });
-
-            // Envia o texto completo recebido do painel para o WhatsApp do cliente
-            sendJSON(res, 200, {
-                replies: [{ text: respostaSigma }]
-            });
-        } catch (err) {
-            console.error('[AutoResponder Error]', err.message);
-            sendJSON(res, 200, {
-                replies: [{ text: 'Ops! Ocorreu um erro ao gerar seu teste. Fale com nosso suporte!' }]
-            });
-        }
         return;
     }
 
