@@ -8,7 +8,6 @@ const https = require('https');
 const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
-let   sharp = null; try { sharp = require('sharp'); } catch(e) { /* sharp opcional */ }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const TMDB_API_KEY   = process.env.TMDB_API_KEY   || '9b73f5dd15b8165b1b57419be2f29128';
@@ -325,29 +324,22 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── OG Image JPG (preview WhatsApp/redes sociais) ──────────────────────
-    if (reqPath === '/og-image.jpg') {
-        var jpgPath = path.join(__dirname, 'og-image.jpg');
-        var svgPath = path.join(__dirname, 'og-image.svg');
-        var serveJpg = function() {
-            if (fs.existsSync(jpgPath)) {
-                res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400' });
-                fs.createReadStream(jpgPath).pipe(res);
-            } else {
-                res.writeHead(404); res.end('og-image.jpg not found');
-            }
-        };
-        // Se já existe o JPG, serve direto
-        if (fs.existsSync(jpgPath)) { serveJpg(); return; }
-        // Senão tenta gerar do SVG com sharp
-        if (sharp && fs.existsSync(svgPath)) {
-            sharp(svgPath).jpeg({ quality: 92 }).toFile(jpgPath, function(err) {
-                if (err) { console.warn('[og-image] sharp erro:', err.message); res.writeHead(500); res.end('erro'); return; }
-                serveJpg();
-            });
-        } else {
-            res.writeHead(404); res.end('og-image not found');
+    // ── OG Image PNG (preview WhatsApp/redes sociais) ──────────────────────
+    if (reqPath === '/og-image.jpg' || reqPath === '/og-image.png') {
+        var ogJpgPath = path.join(__dirname, 'og-image.png');
+        if (fs.existsSync(ogJpgPath)) {
+            res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' });
+            fs.createReadStream(ogJpgPath).pipe(res);
+            return;
         }
+        // Fallback: serve SVG como PNG (WhatsApp aceita se Content-Type correto)
+        var ogSvgPath = path.join(__dirname, 'og-image.svg');
+        if (fs.existsSync(ogSvgPath)) {
+            res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=3600' });
+            fs.createReadStream(ogSvgPath).pipe(res);
+            return;
+        }
+        res.writeHead(404); res.end('og-image not found');
         return;
     }
 
@@ -373,16 +365,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('⚽  Football:', FOOTBALL_KEY   ? '✅ OK — dados em tempo real' : '⚠️  Não configurada — Copa sem tempo real');
     console.log('🎬  TMDB:    ✅ OK');
     console.log('');
-
-    // ── Gera og-image.jpg do SVG na inicialização ───────────────────────────
-    var _svgPath = path.join(__dirname, 'og-image.svg');
-    var _jpgPath = path.join(__dirname, 'og-image.jpg');
-    if (sharp && fs.existsSync(_svgPath) && !fs.existsSync(_jpgPath)) {
-        sharp(_svgPath).jpeg({ quality: 92 }).toFile(_jpgPath, function(err) {
-            if (err) console.warn('[og-image] Falha ao gerar JPG:', err.message);
-            else console.log('🖼️  og-image.jpg gerado com sucesso');
-        });
-    }
 
     // ── Keep-alive: auto-ping a cada 10 minutos para não suspender no Render ──
     var SITE_URL = process.env.RENDER_EXTERNAL_URL || ('http://localhost:' + PORT);
