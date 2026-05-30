@@ -3,12 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLTV Play — O Melhor do Streaming</title>
+    <title>VLTV Play — IPTV Premium</title>
     <meta property="og:title" content="VLTV Play — O Melhor do Streaming">
-    <meta property="og:description" content="Milhares de canais, filmes e séries com estabilidade total. Teste grátis por 3 horas.">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1574375927938-d5a98e8edd86?q=80&w=600">
-    <meta property="og:url" content="https://vltvplay.com">
+    <meta property="og:description" content="Milhares de canais, filmes e séries em HD & 4K com estabilidade total. Teste grátis por 3 horas.">
+    <meta property="og:image" content="https://vltv.onrender.com/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="VLTV Play — O Melhor do Streaming">
+    <meta property="og:url" content="https://vltv.onrender.com">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="VLTV Play">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="VLTV Play — O Melhor do Streaming">
+    <meta name="twitter:description" content="Milhares de canais, filmes e séries em HD & 4K com estabilidade total. Teste grátis por 3 horas.">
+    <meta name="twitter:image" content="https://vltv.onrender.com/og-image.jpg">
+    <meta name="description" content="Milhares de canais, filmes e séries em HD & 4K com estabilidade total. Teste grátis por 3 horas.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -150,7 +159,7 @@
     <div class="copa-panel active" id="copa-panel-grupos">
         <div class="grupos-grid" id="gruposGrid">
             <!-- 12 grupos estáticos com dados reais — API complementa em tempo real -->
-            <div class="grupo-card" onclick="openGrupoModal('A')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo A</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇲🇽</span><span>México</span></div>
@@ -159,7 +168,7 @@
                     <div class="grupo-selecao"><span>🇨🇿</span><span>Rep. Tcheca</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('B')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo B</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇨🇦</span><span>Canadá</span></div>
@@ -168,7 +177,7 @@
                     <div class="grupo-selecao"><span>🏴󠁧󠁢󠁷󠁬󠁳󠁿</span><span>País de Gales</span></div>
                 </div>
             </div>
-            <div class="grupo-card brasil-grupo" onclick="openGrupoModal('C')">
+            <div class="grupo-card brasil-grupo" >
                 <div class="grupo-label">Grupo C 🇧🇷</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao destaque"><span>🇧🇷</span><span>Brasil</span></div>
@@ -177,7 +186,7 @@
                     <div class="grupo-selecao"><span>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span><span>Escócia</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('D')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo D</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇺🇸</span><span>EUA</span></div>
@@ -186,7 +195,7 @@
                     <div class="grupo-selecao"><span>🇹🇷</span><span>Turquia</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('E')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo E</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇩🇪</span><span>Alemanha</span></div>
@@ -195,7 +204,7 @@
                     <div class="grupo-selecao"><span>🇪🇨</span><span>Equador</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('F')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo F</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇳🇱</span><span>Holanda</span></div>
@@ -204,7 +213,7 @@
                     <div class="grupo-selecao"><span>🇺🇦</span><span>Ucrânia</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('G')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo G</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇧🇪</span><span>Bélgica</span></div>
@@ -213,7 +222,7 @@
                     <div class="grupo-selecao"><span>🇳🇿</span><span>Nova Zelândia</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('H')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo H</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇪🇸</span><span>Espanha</span></div>
@@ -222,7 +231,7 @@
                     <div class="grupo-selecao"><span>🇺🇾</span><span>Uruguai</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('I')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo I</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇫🇷</span><span>França</span></div>
@@ -231,7 +240,7 @@
                     <div class="grupo-selecao"><span>🇮🇶</span><span>Iraque</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('J')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo J</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇦🇷</span><span>Argentina</span></div>
@@ -240,7 +249,7 @@
                     <div class="grupo-selecao"><span>🇯🇴</span><span>Jordânia</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('K')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo K</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🇵🇹</span><span>Portugal</span></div>
@@ -249,7 +258,7 @@
                     <div class="grupo-selecao"><span>🇨🇩</span><span>RD Congo</span></div>
                 </div>
             </div>
-            <div class="grupo-card" onclick="openGrupoModal('L')">
+            <div class="grupo-card" >
                 <div class="grupo-label">Grupo L</div>
                 <div class="grupo-selecoes">
                     <div class="grupo-selecao"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span>Inglaterra</span></div>
