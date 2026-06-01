@@ -154,7 +154,7 @@ function callFootball(endpoint) {
 
 function callGemini(history) {
     return new Promise((resolve, reject) => {
-        // system_instruction como campo separado — suportado em v1beta
+        // system_instruction como campo separado — suportado em v1
         const bodyObj = {
             system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
             contents: history,
@@ -168,7 +168,7 @@ function callGemini(history) {
 
         const req = https.request({
             hostname: 'generativelanguage.googleapis.com',
-            path:     `/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+            path:     `/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
             method:   'POST',
             headers:  {
                 'Content-Type':   'application/json',
@@ -307,7 +307,7 @@ const server = http.createServer(async (req, res) => {
                     console.error('[chat] GEMINI_API_KEY não configurada!');
                     return sendJSON(res, 200, { reply: 'Assistente indisponível no momento. Fale pelo WhatsApp! 💬' });
                 }
-                console.log('[chat] Chamando Gemini 1.5 Flash Latest...');
+                console.log('[chat] Chamando Gemini 2.0 Flash (v1)...');
                 const result = await callGemini(history);
                 if (result.status !== 200 || result.data.error) {
                     console.error('[chat] Falhou:', JSON.stringify(result.data.error || {}));
@@ -360,7 +360,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('║        VLTV Play — Servidor Online       ║');
     console.log('╚══════════════════════════════════════════╝');
     console.log('🌐  URL:      http://0.0.0.0:' + PORT);
-    console.log('🔑  Gemini:  ', GEMINI_API_KEY ? '✅ OK — gemini-1.5-flash-latest (API v1)' : '❌ NÃO CONFIGURADA — adicione GEMINI_API_KEY no Render');
+    console.log('🔑  Gemini:  ', GEMINI_API_KEY ? '✅ OK — gemini-2.0-flash (API v1 estável)' : '❌ NÃO CONFIGURADA — adicione GEMINI_API_KEY no Render');
     console.log('⚽  Football:', FOOTBALL_KEY   ? '✅ OK — dados em tempo real' : '⚠️  Não configurada — Copa sem tempo real');
     console.log('🎬  TMDB:    ✅ OK');
     console.log('');
